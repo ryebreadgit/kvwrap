@@ -1,0 +1,26 @@
+[package]
+name = "fjwrap"
+version.workspace = true
+edition.workspace = true
+description = "Flexible fjall wrapper with optional distributed capabilities"
+
+[features]
+default = []
+
+# Individual fine-grained features within distributed
+grpc = ["distributed", "fjwrap-distributed/grpc"]
+raft = ["distributed", "fjwrap-distributed/raft"]
+sharding = ["distributed", "fjwrap-distributed/sharding"]
+
+# Convenience presets
+distributed = ["dep:fjwrap-distributed"]
+cluster = ["distributed", "grpc", "raft"]
+sharded = ["distributed", "grpc", "sharding"]
+full = ["distributed", "grpc", "raft", "sharding"]
+
+client = ["dep:fjwrap-client"]
+
+[dependencies]
+fjwrap-core = { workspace = true }
+fjwrap-distributed = { workspace = true, optional = true }
+fjwrap-client = { workspace = true, optional = true }

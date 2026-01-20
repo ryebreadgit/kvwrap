@@ -1,0 +1,32 @@
+[package]
+name = "fjwrap-distributed"
+version.workspace = true
+edition.workspace = true
+description = "Distributed capabilities for fjwrap"
+
+[features]
+default = ["grpc"]
+grpc = ["dep:tonic", "dep:prost", "dep:async-compat"]
+raft = []
+sharding = []
+
+[dependencies]
+fjwrap-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+# Smol ecosystem
+smol = { workspace = true }
+async-channel = { workspace = true }
+async-lock = { workspace = true }
+async-net = { workspace = true }
+futures-lite = { workspace = true }
+
+# Grpc & Raft
+tonic = { workspace = true, optional = true }
+openraft = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+async-compat = { workspace = true, optional = true }
