@@ -5,7 +5,10 @@ edition.workspace = true
 description = "Lightweight client for fjwrap clusters"
 
 [dependencies]
+fjwrap-core = { path = "../fjwrap-core" }
+fjwrap-proto = { path = "../fjwrap-proto" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
+tonic = { workspace = true }

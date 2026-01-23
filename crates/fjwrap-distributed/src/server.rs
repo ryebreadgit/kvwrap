@@ -23,6 +23,7 @@ fn core_error_to_status(err: CoreError) -> Status {
         CoreError::Storage(e) => Status::internal(format!("storage error: {}", e)),
         CoreError::Io(e) => Status::internal(format!("io error: {}", e)),
         CoreError::SerdeJson(e) => Status::internal(format!("serialization error: {}", e)),
+        CoreError::Network(e) => Status::internal(format!("network error: {}", e)),
         CoreError::Other(msg) => Status::internal(msg),
     }
 }
