@@ -12,6 +12,7 @@
 
   # https://devenv.sh/packages/
   packages = with pkgs; [
+    protobuf
   ];
 
   # https://devenv.sh/variables/

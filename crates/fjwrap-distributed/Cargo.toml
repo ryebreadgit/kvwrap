@@ -6,27 +6,17 @@ description = "Distributed capabilities for fjwrap"
 
 [features]
 default = ["grpc"]
-grpc = ["dep:tonic", "dep:prost", "dep:async-compat"]
+grpc = ["dep:tonic", "dep:prost", "dep:tokio"]
 raft = []
 sharding = []
 
 [dependencies]
-fjwrap-core = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tracing = { workspace = true }
-async-trait = { workspace = true }
-thiserror = { workspace = true }
-
-# Smol ecosystem
-smol = { workspace = true }
-async-channel = { workspace = true }
-async-lock = { workspace = true }
-async-net = { workspace = true }
-futures-lite = { workspace = true }
-
-# Grpc & Raft
+fjwrap-core = { path = "../fjwrap-core" }
 tonic = { workspace = true, optional = true }
-openraft = { workspace = true, optional = true }
 prost = { workspace = true, optional = true }
-async-compat = { workspace = true, optional = true }
+tonic-prost = { workspace = true }
+tokio = { workspace = true, optional = true }
+tracing = { workspace = true }
+
+[build-dependencies]
+tonic-prost-build = { workspace = true }

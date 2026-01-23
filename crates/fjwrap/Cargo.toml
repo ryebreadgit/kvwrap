@@ -8,9 +8,9 @@ description = "Flexible fjall wrapper with optional distributed capabilities"
 default = []
 
 # Individual fine-grained features within distributed
-grpc = ["distributed", "fjwrap-distributed/grpc"]
-raft = ["distributed", "fjwrap-distributed/raft"]
-sharding = ["distributed", "fjwrap-distributed/sharding"]
+grpc = ["distributed"]
+raft = ["distributed"]
+sharding = ["distributed"]
 
 # Convenience presets
 distributed = ["dep:fjwrap-distributed"]
