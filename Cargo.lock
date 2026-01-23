@@ -431,8 +431,6 @@ dependencies = [
  "prost",
  "tokio",
  "tonic",
- "tonic-prost",
- "tonic-prost-build",
  "tracing",
 ]
 
