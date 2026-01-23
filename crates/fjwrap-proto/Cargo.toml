@@ -1,0 +1,13 @@
+[package]
+name = "fjwrap-proto"
+version.workspace = true
+edition.workspace = true
+description = "Protobuf definitiaons for fjwrap"
+
+[dependencies]
+tonic = { workspace = true }
+prost = { workspace = true }
+tonic-prost = { workspace = true }
+
+[build-dependencies]
+tonic-prost-build = { workspace = true }

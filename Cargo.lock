@@ -402,9 +402,11 @@ name = "fjwrap-client"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "fjwrap-core",
  "serde",
  "serde_json",
  "thiserror",
+ "tonic",
 ]
 
 [[package]]
@@ -424,12 +426,23 @@ name = "fjwrap-distributed"
 version = "0.1.0"
 dependencies = [
  "fjwrap-core",
+ "fjwrap-proto",
  "prost",
  "tokio",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
  "tracing",
+]
+
+[[package]]
+name = "fjwrap-proto"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
 ]
 
 [[package]]

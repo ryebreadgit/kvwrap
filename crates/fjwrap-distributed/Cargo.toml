@@ -12,6 +12,7 @@ sharding = []
 
 [dependencies]
 fjwrap-core = { path = "../fjwrap-core" }
+fjwrap-proto = { path = "../fjwrap-proto" }
 tonic = { workspace = true, optional = true }
 prost = { workspace = true, optional = true }
 tonic-prost = { workspace = true }

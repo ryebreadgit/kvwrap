@@ -1,11 +1,10 @@
-mod proto;
 mod server;
 
 use fjwrap_core::KvStore;
+use fjwrap_proto::kv_service_server::KvServiceServer;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-pub use proto::*;
 pub use server::KvServiceImpl;
 
 pub async fn run_server<S>(store: Arc<S>, addr: SocketAddr) -> Result<(), tonic::transport::Error>
@@ -17,7 +16,7 @@ where
     tracing::info!(%addr, "starting gRPC server");
 
     tonic::transport::Server::builder()
-        .add_service(kv_service_server::KvServiceServer::new(kv_service))
+        .add_service(KvServiceServer::new(kv_service))
         .serve(addr)
         .await
 }

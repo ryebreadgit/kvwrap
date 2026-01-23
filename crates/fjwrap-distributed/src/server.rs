@@ -1,8 +1,8 @@
-use crate::proto::kv_service_server::KvService;
-use crate::proto::{
-    DeleteRequest, DeleteResponse, GetRequest, GetResponse, SetRequest, SetResponse,
-};
 use fjwrap_core::{Error as CoreError, KvStore};
+use fjwrap_proto::{
+    DeleteRequest, DeleteResponse, GetRequest, GetResponse, SetRequest, SetResponse,
+    kv_service_server::KvService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 

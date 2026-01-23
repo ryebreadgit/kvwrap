@@ -6,6 +6,7 @@ members = [
     "crates/fjwrap-core",
     "crates/fjwrap-distributed",
     "crates/fjwrap-client",
+    "crates/fjwrap-proto"
 ]
 
 [workspace.package]
