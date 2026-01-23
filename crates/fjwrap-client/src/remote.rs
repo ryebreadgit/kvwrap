@@ -2,7 +2,10 @@ use crate::config::RemoteConfig;
 use async_trait::async_trait;
 use fjwrap_core::{Error, KvStore, Result};
 use fjwrap_proto::{DeleteRequest, GetRequest, SetRequest, kv_service_client::KvServiceClient};
-use tonic::transport::Channel;
+use tonic::{
+    Code, Status,
+    transport::{Channel, Endpoint},
+};
 
 #[derive(Clone)]
 pub struct RemoteStore {
@@ -11,7 +14,7 @@ pub struct RemoteStore {
 
 impl RemoteStore {
     pub async fn connect(config: RemoteConfig) -> Result<Self> {
-        let mut endpoint: tonic::transport::Endpoint = Channel::from_shared(config.endpoint)
+        let mut endpoint: Endpoint = Endpoint::from_shared(config.endpoint)
             .map_err(|e| Error::Other(format!("invalid endpoint: {}", e)))?;
 
         if let Some(timeout) = config.connect_timeout {
@@ -33,7 +36,7 @@ impl RemoteStore {
     }
 
     pub fn connect_lazy(config: RemoteConfig) -> Result<Self> {
-        let mut endpoint = Channel::from_shared(config.endpoint)
+        let mut endpoint: Endpoint = Endpoint::from_shared(config.endpoint)
             .map_err(|e| Error::Other(format!("invalid endpoint: {}", e)))?;
 
         if let Some(timeout) = config.connect_timeout {
@@ -86,11 +89,11 @@ impl KvStore for RemoteStore {
     }
 }
 
-fn status_to_core_error(status: tonic::Status) -> Error {
+fn status_to_core_error(status: Status) -> Error {
     match status.code() {
-        tonic::Code::NotFound => Error::KeyNotFound,
-        tonic::Code::Unavailable => Error::Network(status.message().to_string()),
-        tonic::Code::DeadlineExceeded => Error::Network("request timed out".to_string()),
+        Code::NotFound => Error::KeyNotFound,
+        Code::Unavailable => Error::Network(status.message().to_string()),
+        Code::DeadlineExceeded => Error::Network("request timed out".to_string()),
         _ => Error::Other(format!(
             "rpc error ({}): {}",
             status.code(),
