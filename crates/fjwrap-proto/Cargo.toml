@@ -8,6 +8,7 @@ description = "Protobuf definitiaons for fjwrap"
 tonic = { workspace = true }
 prost = { workspace = true }
 tonic-prost = { workspace = true }
+serde = { workspace = true }
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }
