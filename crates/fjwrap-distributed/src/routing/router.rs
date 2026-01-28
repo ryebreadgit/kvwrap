@@ -35,12 +35,16 @@ impl StaticRouter {
 }
 
 impl ShardRouter for StaticRouter {
-    fn route(&self, partition: &str, key: &[u8]) -> RouteResult<ShardId> {
+    fn route(&self, partition: &[u8], key: &[u8]) -> RouteResult<ShardId> {
         let shard_key = self.shard_key(partition, key);
 
         for shard in &self.config.shards {
             if let Some(range) = &shard.range {
-                if range.contains(&shard_key) {
+                let begin = range.begin.as_ref().map(|b| b.as_slice());
+                let end = range.end.as_ref().map(|e| e.as_slice());
+                if (begin.is_none() || shard_key.as_slice() >= begin.unwrap())
+                    && (end.is_none() || shard_key.as_slice() < end.unwrap())
+                {
                     if shard.status() == ShardStatus::Active {
                         return Ok(shard.id.clone().unwrap());
                     }

@@ -4,25 +4,25 @@ use serde::{Serialize, de::DeserializeOwned};
 
 #[async_trait]
 pub trait KvStore: Send + Sync {
-    async fn get(&self, partition: &str, key: &[u8]) -> Result<Option<Vec<u8>>>;
-    async fn set(&self, partition: &str, key: &[u8], value: &[u8]) -> Result<()>;
-    async fn delete(&self, partition: &str, key: &[u8]) -> Result<()>;
+    async fn get(&self, partition: &[u8], key: &[u8]) -> Result<Option<Vec<u8>>>;
+    async fn set(&self, partition: &[u8], key: &[u8], value: &[u8]) -> Result<()>;
+    async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()>;
 }
 
 #[async_trait]
 pub trait KvStoreExt: KvStore {
-    async fn get_json<T>(&self, partition: &str, key: &[u8]) -> Result<T>
+    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<T>
     where
         T: DeserializeOwned + Send;
 
-    async fn set_json<T>(&self, partition: &str, key: &[u8], value: &T) -> Result<()>
+    async fn set_json<T>(&self, partition: &[u8], key: &[u8], value: &T) -> Result<()>
     where
         T: Serialize + Sync;
 }
 
 #[async_trait]
 impl<S: KvStore> KvStoreExt for S {
-    async fn get_json<T>(&self, partition: &str, key: &[u8]) -> Result<T>
+    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<T>
     where
         T: DeserializeOwned + Send,
     {
@@ -32,7 +32,7 @@ impl<S: KvStore> KvStoreExt for S {
         }
     }
 
-    async fn set_json<T>(&self, partition: &str, key: &[u8], value: &T) -> Result<()>
+    async fn set_json<T>(&self, partition: &[u8], key: &[u8], value: &T) -> Result<()>
     where
         T: Serialize + Sync,
     {

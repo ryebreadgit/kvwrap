@@ -63,9 +63,9 @@ impl RemoteStore {
 
 #[async_trait]
 impl KvStore for RemoteStore {
-    async fn get(&self, partition: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    async fn get(&self, partition: &[u8], key: &[u8]) -> Result<Option<Vec<u8>>> {
         let request = GetRequest {
-            partition: partition.to_string(),
+            partition: partition.to_vec(),
             key: key.to_vec(),
         };
         let mut client = self.client.clone();
@@ -77,9 +77,9 @@ impl KvStore for RemoteStore {
         Ok(response.into_inner().value)
     }
 
-    async fn set(&self, partition: &str, key: &[u8], value: &[u8]) -> Result<()> {
+    async fn set(&self, partition: &[u8], key: &[u8], value: &[u8]) -> Result<()> {
         let request = SetRequest {
-            partition: partition.to_string(),
+            partition: partition.to_vec(),
             key: key.to_vec(),
             value: value.to_vec(),
         };
@@ -92,9 +92,9 @@ impl KvStore for RemoteStore {
         Ok(())
     }
 
-    async fn delete(&self, partition: &str, key: &[u8]) -> Result<()> {
+    async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()> {
         let request = DeleteRequest {
-            partition: partition.to_string(),
+            partition: partition.to_vec(),
             key: key.to_vec(),
         };
         let mut client = self.client.clone();

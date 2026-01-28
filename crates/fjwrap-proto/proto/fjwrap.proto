@@ -30,7 +30,7 @@ service RaftService {
 }
 
 message GetRequest {
-    string partition = 1;
+    bytes partition = 1;
     bytes key = 2;
 }
 
@@ -39,7 +39,7 @@ message GetResponse {
 }
 
 message SetRequest {
-    string partition = 1;
+    bytes partition = 1;
     bytes key = 2;
     bytes value = 3;
 }
@@ -47,7 +47,7 @@ message SetRequest {
 message SetResponse {}
 
 message DeleteRequest {
-    string partition = 1;
+    bytes partition = 1;
     bytes key = 2;
 }
 
