@@ -21,3 +21,6 @@ router_settings.json
 
 # Ignore IDE files
 .vscode/
+
+# Ignore compose file
+compose.yml

@@ -1,0 +1,13 @@
+services:
+  server:
+    image: fjwrap-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      FJWRAP_NODE_ID: 0
+    volumes:
+      - ./data:/.fjwrap_data
+      - ./router_settings.json:/router_settings.json:ro
