@@ -24,21 +24,16 @@ struct Args {
         env = "FJWRAP_ROUTER_CONFIG_PATH"
     )]
     router_config_path: String,
-
-    #[arg(long, default_value = "false")]
-    generate_default_config: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    if args.generate_default_config {
-        if fs::metadata("./router_settings.json").is_ok() {
-            println!("'./router_settings.json' already exists, not overwriting");
-            return Ok(());
-        }
+    if !fs::metadata(&args.router_config_path).is_ok() {
         let mut formatter = Formatter::new();
+        formatter.options.indent_spaces = 2;
+        formatter.options.simple_bracket_padding = true;
         let default_config = ClusterConfig {
             version: 1,
             nodes: vec![NodeInfo {
@@ -62,7 +57,6 @@ async fn main() -> Result<(), Error> {
         let json_str = formatter.serialize(&default_config, 0, 100)?;
         fs::write("./router_settings.json", json_str)?;
         println!("Default router config written to './router_settings.json'");
-        return Ok(());
     }
 
     let config = LocalConfig {
@@ -82,11 +76,7 @@ async fn main() -> Result<(), Error> {
         String::new()
     };
 
-    let router_config = if router_config_str.is_empty() {
-        StaticRouter::single_node(0, args.listen.ip().to_string(), args.listen.port().into())
-    } else {
-        StaticRouter::from_json_str(&router_config_str)?
-    };
+    let router_config = StaticRouter::from_json_str(&router_config_str)?;
 
     let router = Arc::new(router_config);
 
