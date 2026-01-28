@@ -5,8 +5,8 @@ pub use fjwrap_proto::{
 
 impl KeyRangeExt for KeyRange {
     fn contains(&self, key: &[u8]) -> bool {
-        if let Some(start) = &self.start {
-            if key < start.as_slice() {
+        if let Some(begin) = &self.begin {
+            if key < begin.as_slice() {
                 return false;
             }
         }
@@ -23,8 +23,8 @@ impl KeyRangeExt for KeyRange {
                 return false;
             }
         }
-        if let Some(start) = &self.start {
-            if start.starts_with(prefix) || prefix >= start.as_slice() {
+        if let Some(begin) = &self.begin {
+            if begin.starts_with(prefix) || prefix >= begin.as_slice() {
                 return true;
             }
             return false;
@@ -54,7 +54,7 @@ impl ClusterConfigExt for ClusterConfig {
             shards: vec![ShardConfig {
                 id: Some(ShardId { id: 0 }),
                 range: Some(KeyRange {
-                    start: None,
+                    begin: None,
                     end: None,
                 }),
                 replicas: vec![NodeId { id: node_id }],

@@ -46,7 +46,7 @@ async fn main() -> Result<(), Error> {
             shards: vec![ShardConfig {
                 id: Some(ShardId { id: 0 }),
                 range: Some(KeyRange {
-                    start: None,
+                    begin: None,
                     end: Some(vec![0xFF, 0xFF, 0xFF, 0xFF]),
                 }),
                 replicas: vec![NodeId { id: 0 }],

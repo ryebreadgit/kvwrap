@@ -83,7 +83,7 @@ enum ShardStatus {
 }
 
 message KeyRange {
-    optional bytes start = 1;
+    optional bytes begin = 1;
     optional bytes end = 2;
 }
 
