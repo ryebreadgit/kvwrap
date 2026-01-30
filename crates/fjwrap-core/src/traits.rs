@@ -3,13 +3,19 @@ use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::Arc;
 
-async fn get_json_impl<S: KvStore + ?Sized, T>(store: &S, partition: &[u8], key: &[u8]) -> Result<T>
+async fn get_json_impl<S: KvStore + ?Sized, T>(
+    store: &S,
+    partition: &[u8],
+    key: &[u8],
+) -> Result<Option<T>>
 where
     T: DeserializeOwned + Send,
 {
     match store.get(partition, key).await? {
-        Some(bytes) => serde_json::from_slice(&bytes).map_err(Error::SerdeJson),
-        None => Err(Error::KeyNotFound),
+        Some(bytes) => serde_json::from_slice(&bytes)
+            .map_err(Error::SerdeJson)
+            .map(Some),
+        None => Ok(None),
     }
 }
 
@@ -32,7 +38,7 @@ pub trait KvStore: Send + Sync {
     async fn set(&self, partition: &[u8], key: &[u8], value: &[u8]) -> Result<()>;
     async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()>;
 
-    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<T>
+    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<Option<T>>
     where
         T: DeserializeOwned + Send,
         Self: Sized,
@@ -63,7 +69,7 @@ impl KvStore for Arc<dyn KvStore> {
         (**self).delete(partition, key).await
     }
 
-    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<T>
+    async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<Option<T>>
     where
         T: DeserializeOwned + Send,
     {
