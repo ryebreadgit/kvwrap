@@ -13,3 +13,7 @@ thiserror = { workspace = true }
 async-trait = { workspace = true }
 async-compat = { workspace = true }
 tonic = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+futures-lite = { workspace = true }
+async-channel = { workspace = true }
+tracing = { workspace = true }

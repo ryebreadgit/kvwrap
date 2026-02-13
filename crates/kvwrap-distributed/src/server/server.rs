@@ -1,13 +1,14 @@
 use crate::routing::ShardRouter;
-use kvwrap_core::{Error, KvStore};
+use kvwrap_core::{Error, KvStore, WatchEvent};
 use kvwrap_proto::{
     DeleteRequest, DeleteResponse, GetRequest, GetResponse, NodeId, SetRequest, SetResponse,
-    ShardId, kv_service_client::KvServiceClient, kv_service_server::KvService,
+    ShardId, WatchEventMessage, WatchRequest, kv_service_client::KvServiceClient,
+    kv_service_server::KvService, watch_event_message::EventType,
 };
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::RwLock;
-use tonic::transport::Channel;
-use tonic::{Request, Response, Status};
+use tokio::sync::{RwLock, mpsc};
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::{Request, Response, Status, transport::Channel};
 
 const PROXIED_HEADER: &str = "x-kvwrap-proxied";
 pub struct KvServiceImpl<S, R> {
@@ -89,12 +90,15 @@ fn core_error_to_status(err: Error) -> Status {
     }
 }
 
+type WatchStream = ReceiverStream<Result<WatchEventMessage, Status>>;
+
 #[tonic::async_trait]
 impl<S, R> KvService for KvServiceImpl<S, R>
 where
     S: KvStore + Send + Sync + 'static,
     R: ShardRouter + Send + Sync + 'static,
 {
+    type WatchStream = WatchStream;
     async fn get(&self, request: Request<GetRequest>) -> Result<Response<GetResponse>, Status> {
         let is_proxied = Self::is_proxied_request(&request);
         let req = request.into_inner();
@@ -289,5 +293,74 @@ where
         }
 
         Err(Status::internal("failed to delete value on any shard node"))
+    }
+    async fn watch(
+        &self,
+        request: Request<WatchRequest>,
+    ) -> Result<Response<Self::WatchStream>, Status> {
+        let is_proxied = Self::is_proxied_request(&request);
+        let req = request.into_inner();
+
+        tracing::debug!(
+            partition = %String::from_utf8_lossy(&req.partition),
+            key_or_prefix_len = req.key_or_prefix.len(),
+            is_prefix = req.is_prefix,
+            "watch request"
+        );
+
+        let shard_id = self
+            .router
+            .route(&req.partition, &req.key_or_prefix)
+            .map_err(|e| Status::internal(format!("routing error: {}", e)))?;
+
+        if !self.owns_shard(&shard_id) {
+            // TODO: proxy watch request to shard node
+            return Err(Status::failed_precondition(
+                "watch must target a node that owns the shard",
+            ));
+        }
+
+        let buffer = 64;
+        let rx = if req.is_prefix {
+            self.store
+                .watch_prefix(&req.partition, &req.key_or_prefix, buffer)
+        } else {
+            self.store
+                .watch_key(&req.partition, &req.key_or_prefix, buffer)
+        };
+
+        let (tx, grpc_rx) = mpsc::channel(buffer);
+
+        tokio::spawn(async move {
+            while let Ok(event) = rx.recv().await {
+                let msg = watch_event_to_proto(&event);
+                if tx.send(Ok(msg)).await.is_err() {
+                    break; // client disconnected
+                }
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(grpc_rx)))
+    }
+}
+
+fn watch_event_to_proto(event: &WatchEvent) -> WatchEventMessage {
+    match event {
+        WatchEvent::Set {
+            partition,
+            key,
+            value,
+        } => WatchEventMessage {
+            event_type: EventType::Set.into(),
+            partition: partition.clone(),
+            key: key.clone(),
+            value: value.clone(),
+        },
+        WatchEvent::Delete { partition, key } => WatchEventMessage {
+            event_type: EventType::Delete.into(),
+            partition: partition.clone(),
+            key: key.clone(),
+            value: Vec::new(),
+        },
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Error, KvStore, LocalConfig, Result};
+use crate::{Error, KvStore, LocalConfig, Result, WatchEvent, WatchRegistry};
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use std::{
@@ -12,6 +12,7 @@ use std::{
 pub struct SledStore {
     db: sled::Db,
     trees: Arc<RwLock<HashMap<Vec<u8>, sled::Tree>>>,
+    watchers: WatchRegistry,
 }
 
 impl SledStore {
@@ -69,17 +70,31 @@ impl KvStore for SledStore {
         let tree = self.get_or_create_tree(partition)?;
         let key = key.to_vec();
         let value = value.to_vec();
+        let key_for_notify = key.clone();
+        let value_for_notify = value.clone();
         blocking::unblock(move || {
             tree.insert(&key, value.as_slice())
                 .map(|_| ())
                 .map_err(Error::Sled)
         })
-        .await
+        .await?;
+        self.watchers.notify(&WatchEvent::Set {
+            partition: partition.to_vec(),
+            key: key_for_notify,
+            value: value_for_notify,
+        });
+        Ok(())
     }
 
     async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()> {
         let tree = self.get_or_create_tree(partition)?;
         let key = key.to_vec();
-        blocking::unblock(move || tree.remove(&key).map(|_| ()).map_err(Error::Sled)).await
+        let key_for_notify = key.clone();
+        blocking::unblock(move || tree.remove(&key).map(|_| ()).map_err(Error::Sled)).await?;
+        self.watchers.notify(&WatchEvent::Delete {
+            partition: partition.to_vec(),
+            key: key_for_notify,
+        });
+        Ok(())
     }
 }

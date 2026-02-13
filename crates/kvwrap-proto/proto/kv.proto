@@ -4,33 +4,52 @@ package kvwrappb;
 /// Service for key-value store operations.
 service KvService {
     // Get value for a given key in a partition
-    rpc Get(GetRequest) returns (GetResponse);
+  rpc Get(GetRequest) returns (GetResponse);
     // Set value for a given key in a partition
-    rpc Set(SetRequest) returns (SetResponse);
+  rpc Set(SetRequest) returns (SetResponse);
     // Delete a given key in a partition
-    rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+    // Watch for changes to a key or prefix in a partition
+  rpc Watch(WatchRequest) returns (stream WatchEventMessage);
 }
 
 message GetRequest {
-    bytes partition = 1;
-    bytes key = 2;
+  bytes partition = 1;
+  bytes key       = 2;
 }
 
 message GetResponse {
-    optional bytes value = 1;
+  optional bytes value = 1;
 }
 
 message SetRequest {
-    bytes partition = 1;
-    bytes key = 2;
-    bytes value = 3;
+  bytes partition = 1;
+  bytes key       = 2;
+  bytes value     = 3;
 }
 
 message SetResponse {}
 
 message DeleteRequest {
-    bytes partition = 1;
-    bytes key = 2;
+  bytes partition = 1;
+  bytes key       = 2;
 }
 
 message DeleteResponse {}
+
+message WatchRequest {
+  bytes partition     = 1;
+  bytes key_or_prefix = 2;
+  bool  is_prefix     = 3;
+}
+
+message WatchEventMessage {
+  enum EventType {
+    SET    = 0;
+    DELETE = 1;
+  }
+  EventType event_type = 1;
+  bytes     partition  = 2;
+  bytes     key        = 3;
+  bytes     value      = 4;
+}

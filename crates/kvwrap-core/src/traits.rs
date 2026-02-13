@@ -1,4 +1,5 @@
-use crate::{Error, Result};
+use crate::{Error, Result, WatchEvent};
+use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::Arc;
@@ -37,6 +38,8 @@ pub trait KvStore: Send + Sync {
     async fn get(&self, partition: &[u8], key: &[u8]) -> Result<Option<Vec<u8>>>;
     async fn set(&self, partition: &[u8], key: &[u8], value: &[u8]) -> Result<()>;
     async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()>;
+    fn watch_key(&self, partition: &[u8], key: &[u8], buffer: usize) -> Receiver<WatchEvent>;
+    fn watch_prefix(&self, partition: &[u8], prefix: &[u8], buffer: usize) -> Receiver<WatchEvent>;
 
     async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<Option<T>>
     where
@@ -67,6 +70,14 @@ impl KvStore for Arc<dyn KvStore> {
 
     async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()> {
         (**self).delete(partition, key).await
+    }
+
+    fn watch_key(&self, partition: &[u8], key: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        (**self).watch_key(partition, key, buffer)
+    }
+
+    fn watch_prefix(&self, partition: &[u8], prefix: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        (**self).watch_prefix(partition, prefix, buffer)
     }
 
     async fn get_json<T>(&self, partition: &[u8], key: &[u8]) -> Result<Option<T>>

@@ -1,8 +1,12 @@
 use crate::config::RemoteConfig;
+use async_channel::Receiver;
 use async_compat::CompatExt;
 use async_trait::async_trait;
-use kvwrap_core::{Error, KvStore, Result};
-use kvwrap_proto::{DeleteRequest, GetRequest, SetRequest, kv_service_client::KvServiceClient};
+use kvwrap_core::{Error, KvStore, Result, WatchEvent};
+use kvwrap_proto::{
+    DeleteRequest, GetRequest, SetRequest, WatchRequest, kv_service_client::KvServiceClient,
+    watch_event_message::EventType,
+};
 use tonic::{
     Code, Status,
     transport::{Channel, Endpoint},
@@ -59,6 +63,59 @@ impl RemoteStore {
         .compat()
         .await
     }
+
+    fn start_watch(
+        &self,
+        partition: &[u8],
+        key_or_prefix: &[u8],
+        is_prefix: bool,
+        buffer: usize,
+    ) -> Receiver<WatchEvent> {
+        let (tx, rx) = async_channel::bounded(buffer);
+        let mut client = self.client.clone();
+        let request = WatchRequest {
+            partition: partition.to_vec(),
+            key_or_prefix: key_or_prefix.to_vec(),
+            is_prefix,
+        };
+
+        tokio::spawn(async move {
+            let stream = match client.watch(request).await {
+                Ok(response) => response.into_inner(),
+                Err(e) => {
+                    tracing::warn!(error = %e, "watch stream failed to start");
+                    return;
+                }
+            };
+
+            Self::run_watch_stream(stream, tx).await;
+        });
+
+        rx
+    }
+
+    async fn run_watch_stream(
+        mut stream: tonic::Streaming<kvwrap_proto::WatchEventMessage>,
+        tx: async_channel::Sender<WatchEvent>,
+    ) {
+        use futures_lite::StreamExt;
+
+        loop {
+            match stream.next().await {
+                Some(Ok(msg)) => {
+                    let event = proto_to_watch_event(msg);
+                    if tx.send(event).await.is_err() {
+                        break;
+                    }
+                }
+                Some(Err(e)) => {
+                    tracing::warn!(error = %e, "watch stream error");
+                    break;
+                }
+                None => break, // stream ended
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -105,6 +162,14 @@ impl KvStore for RemoteStore {
             .map_err(status_to_core_error)?;
         Ok(())
     }
+
+    fn watch_key(&self, partition: &[u8], key: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        self.start_watch(partition, key, false, buffer)
+    }
+
+    fn watch_prefix(&self, partition: &[u8], prefix: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        self.start_watch(partition, prefix, true, buffer)
+    }
 }
 
 fn status_to_core_error(status: Status) -> Error {
@@ -117,5 +182,19 @@ fn status_to_core_error(status: Status) -> Error {
             status.code(),
             status.message()
         )),
+    }
+}
+
+fn proto_to_watch_event(msg: kvwrap_proto::WatchEventMessage) -> WatchEvent {
+    match EventType::try_from(msg.event_type) {
+        Ok(EventType::Delete) => WatchEvent::Delete {
+            partition: msg.partition,
+            key: msg.key,
+        },
+        _ => WatchEvent::Set {
+            partition: msg.partition,
+            key: msg.key,
+            value: msg.value,
+        },
     }
 }

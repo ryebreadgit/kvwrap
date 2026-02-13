@@ -43,6 +43,7 @@ base64 = "0.22"
 
 # Async runtime
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio-stream = "0.1"
 macro_rules_attribute = "0.2"
 async-channel = "2"
 async-lock = "3"

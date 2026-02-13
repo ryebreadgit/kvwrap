@@ -1,4 +1,5 @@
-use crate::{Error, KvStore, LocalConfig, Result};
+use crate::{Error, KvStore, LocalConfig, Result, WatchEvent, WatchRegistry};
+use async_channel::Receiver;
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use fjall::{Database, Keyspace, KeyspaceCreateOptions};
@@ -13,6 +14,7 @@ use std::{
 pub struct FjallStore {
     db: Database,
     keyspaces: Arc<RwLock<HashMap<Vec<u8>, Keyspace>>>,
+    watchers: WatchRegistry,
 }
 
 impl FjallStore {
@@ -29,6 +31,7 @@ impl FjallStore {
         Ok(Self {
             db,
             keyspaces: Arc::new(RwLock::new(HashMap::new())),
+            watchers: WatchRegistry::default(),
         })
     }
 
@@ -72,11 +75,39 @@ impl KvStore for FjallStore {
         let keyspace = self.get_or_create_keyspace(partition)?;
         let key = key.to_vec();
         let value = value.to_vec();
-        blocking::unblock(move || keyspace.insert(&key, &value).map_err(Error::Fjall)).await
+        let key_for_notify = key.clone();
+        let value_for_notify = value.clone();
+        blocking::unblock({
+            let key = key;
+            let value = value;
+            move || keyspace.insert(&key, &value).map_err(Error::Fjall)
+        })
+        .await?;
+
+        self.watchers.notify(&WatchEvent::Set {
+            partition: partition.to_vec(),
+            key: key_for_notify,
+            value: value_for_notify,
+        });
+        Ok(())
     }
     async fn delete(&self, partition: &[u8], key: &[u8]) -> Result<()> {
         let keyspace = self.get_or_create_keyspace(partition)?;
         let key = key.to_vec();
-        blocking::unblock(move || keyspace.remove(&key).map_err(Error::Fjall)).await
+        let key_for_notify = key.clone();
+        blocking::unblock(move || keyspace.remove(&key).map_err(Error::Fjall)).await?;
+        self.watchers.notify(&WatchEvent::Delete {
+            partition: partition.to_vec(),
+            key: key_for_notify,
+        });
+        Ok(())
+    }
+
+    fn watch_key(&self, partition: &[u8], key: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        self.watchers.subscribe_key(partition, key, buffer)
+    }
+
+    fn watch_prefix(&self, partition: &[u8], prefix: &[u8], buffer: usize) -> Receiver<WatchEvent> {
+        self.watchers.subscribe_prefix(partition, prefix, buffer)
     }
 }
