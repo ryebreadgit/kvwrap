@@ -5,7 +5,7 @@ edition.workspace = true
 description = "Distributed capabilities for kvwrap"
 
 [features]
-default = ["fjall"]
+default = []
 fjall = ["kvwrap-core/fjall"]
 sled = ["kvwrap-core/sled"]
 
