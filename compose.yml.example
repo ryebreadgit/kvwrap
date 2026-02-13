@@ -7,7 +7,7 @@ services:
     ports:
       - "50051:50051"
     environment:
-      kvwrap_NODE_ID: 0
+      KVWRAP_NODE_ID: 0
     volumes:
       - ./data:/.kvwrap_data
       - ./router_settings.json:/router_settings.json:ro
