@@ -24,11 +24,11 @@ struct Args {
     #[arg(
         long,
         default_value = "./router_settings.json",
-        env = "kvwrap_ROUTER_CONFIG_PATH"
+        env = "KVWRAP_ROUTER_CONFIG_PATH"
     )]
     router_config_path: String,
 
-    #[arg(long, default_value = "false", env = "kvwrap_VERBOSE")]
+    #[arg(long, default_value = "false", env = "KVWRAP_VERBOSE")]
     verbose: bool,
 }
 
