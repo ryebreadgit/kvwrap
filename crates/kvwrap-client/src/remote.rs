@@ -2,10 +2,12 @@ use crate::config::RemoteConfig;
 use async_channel::Receiver;
 use async_compat::CompatExt;
 use async_trait::async_trait;
+use blocking::unblock;
+use futures_lite::future::{FutureExt, block_on};
 use kvwrap_core::{Error, KvStore, Result, WatchEvent};
 use kvwrap_proto::{
-    DeleteRequest, GetRequest, SetRequest, WatchRequest, kv_service_client::KvServiceClient,
-    watch_event_message::EventType,
+    AllKeysRequest, AllKeysResponse, DeleteRequest, GetRequest, SetRequest, WatchRequest,
+    kv_service_client::KvServiceClient, watch_event_message::EventType,
 };
 use tonic::{
     Code, Status,
@@ -64,6 +66,38 @@ impl RemoteStore {
         .await
     }
 
+    fn start_all_keys_stream(
+        &self,
+        partition: &str,
+        prefix: Option<&[u8]>,
+        buffer: usize,
+    ) -> Receiver<Result<Vec<u8>>> {
+        let (tx, rx) = async_channel::bounded(buffer);
+        let mut client = self.client.clone();
+        let request = AllKeysRequest {
+            partition: partition.to_string(),
+            prefix: prefix.map(|p| p.to_vec()).unwrap_or_default(),
+            buffer_size: buffer as u32,
+        };
+
+        unblock(move || {
+            block_on(async move {
+                let stream = match client.all_keys(request).compat().await {
+                    Ok(response) => response.into_inner(),
+                    Err(e) => {
+                        tracing::warn!(error = %e, "all_keys stream failed to start");
+                        return;
+                    }
+                };
+
+                Self::run_all_keys_stream(stream, tx).await;
+            });
+        })
+        .detach();
+
+        rx
+    }
+
     fn start_watch(
         &self,
         partition: &str,
@@ -79,8 +113,8 @@ impl RemoteStore {
             is_prefix,
         };
 
-        blocking::unblock(move || {
-            futures_lite::future::block_on(async move {
+        unblock(move || {
+            block_on(async move {
                 let stream = match client.watch(request).compat().await {
                     Ok(response) => response.into_inner(),
                     Err(e) => {
@@ -113,6 +147,30 @@ impl RemoteStore {
                     Ok(None) => break,
                     Err(e) => {
                         tracing::warn!(error = %e, "watch stream error");
+                        break;
+                    }
+                }
+            }
+        }
+        .compat()
+        .await
+    }
+
+    async fn run_all_keys_stream(
+        mut stream: tonic::Streaming<AllKeysResponse>,
+        tx: async_channel::Sender<Result<Vec<u8>>>,
+    ) {
+        async {
+            loop {
+                match stream.message().await {
+                    Ok(Some(msg)) => {
+                        if tx.send(Ok(msg.key)).await.is_err() {
+                            break;
+                        }
+                    }
+                    Ok(None) => break,
+                    Err(e) => {
+                        tracing::warn!(error = %e, "all_keys stream error");
                         break;
                     }
                 }
@@ -166,6 +224,15 @@ impl KvStore for RemoteStore {
             .await
             .map_err(status_to_core_error)?;
         Ok(())
+    }
+
+    fn all_keys(
+        &self,
+        partition: &str,
+        prefix: Option<&[u8]>,
+        buffer: usize,
+    ) -> Receiver<Result<Vec<u8>>> {
+        self.start_all_keys_stream(partition, prefix, buffer)
     }
 
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent> {

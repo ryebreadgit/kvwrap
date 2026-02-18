@@ -9,6 +9,8 @@ service KvService {
   rpc Set(SetRequest) returns (SetResponse);
     // Delete a given key in a partition
   rpc Delete(DeleteRequest) returns (DeleteResponse);
+    // All keys in a partition, optionally filtered by prefix
+  rpc AllKeys(AllKeysRequest) returns (stream AllKeysResponse);
     // Watch for changes to a key or prefix in a partition
   rpc Watch(WatchRequest) returns (stream WatchEventMessage);
 }
@@ -36,6 +38,16 @@ message DeleteRequest {
 }
 
 message DeleteResponse {}
+
+message AllKeysRequest {
+  string partition     = 1;
+  bytes prefix        = 2; // Optional prefix filter
+  uint32 buffer_size = 3;
+}
+
+message AllKeysResponse {
+  bytes key = 1;
+}
 
 message WatchRequest {
   string partition     = 1;

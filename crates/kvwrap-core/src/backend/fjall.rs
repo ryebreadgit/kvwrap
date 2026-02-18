@@ -7,6 +7,7 @@ use std::{
     fs,
     path::Path,
     sync::{Arc, RwLock},
+    thread,
 };
 
 #[derive(Clone)]
@@ -99,6 +100,47 @@ impl KvStore for FjallStore {
             key: key_for_notify,
         });
         Ok(())
+    }
+
+    fn all_keys(
+        &self,
+        partition: &str,
+        prefix: Option<&[u8]>,
+        buffer: usize,
+    ) -> Receiver<Result<Vec<u8>>> {
+        let (tx, rx) = async_channel::bounded(buffer);
+
+        let keyspace = match self.get_or_create_keyspace(partition) {
+            Ok(ks) => ks,
+            Err(e) => {
+                let _ = tx.try_send(Err(e));
+                return rx;
+            }
+        };
+
+        let prefix = prefix.map(|p| p.to_vec());
+
+        thread::spawn(move || {
+            let iter = match prefix {
+                Some(ref p) => keyspace.prefix(p),
+                None => keyspace.iter(),
+            };
+
+            for kv in iter {
+                let (key, _) = match kv.into_inner() {
+                    Ok(kv) => kv,
+                    Err(e) => {
+                        let _ = tx.send_blocking(Err(Error::Fjall(e)));
+                        break;
+                    }
+                };
+                if tx.send_blocking(Ok(key.to_vec())).is_err() {
+                    break; // Receiver dropped
+                }
+            }
+        });
+
+        rx
     }
 
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent> {

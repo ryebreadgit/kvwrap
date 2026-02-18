@@ -1,13 +1,14 @@
 use crate::routing::ShardRouter;
 use kvwrap_core::{Error, KvStore, WatchEvent};
 use kvwrap_proto::{
-    DeleteRequest, DeleteResponse, GetRequest, GetResponse, NodeId, SetRequest, SetResponse,
-    ShardId, WatchEventMessage, WatchRequest, kv_service_client::KvServiceClient,
-    kv_service_server::KvService, watch_event_message::EventType,
+    AllKeysRequest, AllKeysResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse,
+    NodeId, SetRequest, SetResponse, ShardId, WatchEventMessage, WatchRequest,
+    kv_service_client::KvServiceClient, kv_service_server::KvService,
+    watch_event_message::EventType,
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{RwLock, mpsc};
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tonic::{Request, Response, Status, transport::Channel};
 
 const PROXIED_HEADER: &str = "x-kvwrap-proxied";
@@ -91,6 +92,7 @@ fn core_error_to_status(err: Error) -> Status {
 }
 
 type WatchStream = ReceiverStream<Result<WatchEventMessage, Status>>;
+type AllKeysStream = ReceiverStream<Result<AllKeysResponse, Status>>;
 
 #[tonic::async_trait]
 impl<S, R> KvService for KvServiceImpl<S, R>
@@ -99,6 +101,7 @@ where
     R: ShardRouter + Send + Sync + 'static,
 {
     type WatchStream = WatchStream;
+    type AllKeysStream = AllKeysStream;
     async fn get(&self, request: Request<GetRequest>) -> Result<Response<GetResponse>, Status> {
         let is_proxied = Self::is_proxied_request(&request);
         let req = request.into_inner();
@@ -294,6 +297,105 @@ where
 
         Err(Status::internal("failed to delete value on any shard node"))
     }
+
+    async fn all_keys(
+        &self,
+        request: Request<AllKeysRequest>,
+    ) -> Result<Response<Self::AllKeysStream>, Status> {
+        let is_proxied = Self::is_proxied_request(&request);
+        let req = request.into_inner();
+
+        tracing::debug!(
+            partition = &req.partition,
+            prefix_len = req.prefix.len(),
+            proxied = is_proxied,
+            "all_keys request"
+        );
+
+        let shard_id = self
+            .router
+            .route(&req.partition, req.prefix.as_slice())
+            .map_err(|e| Status::internal(format!("routing error: {}", e)))?;
+
+        if self.owns_shard(&shard_id) {
+            let rx = self.store.all_keys(
+                &req.partition,
+                Some(req.prefix.as_slice()),
+                req.buffer_size as usize,
+            );
+
+            let (tx, grpc_rx) = mpsc::channel(req.buffer_size as usize);
+
+            tokio::spawn(async move {
+                while let Ok(result) = rx.recv().await {
+                    let msg = match result {
+                        Ok(key) => AllKeysResponse { key },
+                        Err(e) => {
+                            let _ = tx.send(Err(core_error_to_status(e))).await;
+                            break;
+                        }
+                    };
+                    if tx.send(Ok(msg)).await.is_err() {
+                        break; // client disconnected
+                    }
+                }
+            });
+
+            return Ok(Response::new(ReceiverStream::new(grpc_rx)));
+        }
+
+        if is_proxied {
+            return Err(Status::internal("requested shard not owned by this node"));
+        }
+
+        let shard_nodes = self
+            .router
+            .shard_nodes(shard_id)
+            .map_err(|e| Status::internal(format!("routing error: {}", e)))?;
+
+        for node in shard_nodes {
+            let address = match node.address {
+                None => continue,
+                Some(address) => address,
+            };
+            let address = format!("{}:{}", address.host, address.port);
+            let mut client = self.get_client(&address).await?;
+            let mut proxied_request = Request::new(AllKeysRequest {
+                partition: req.partition.clone(),
+                prefix: req.prefix.clone(),
+                buffer_size: req.buffer_size,
+            });
+            Self::mark_request_as_proxied(&mut proxied_request);
+            match client.all_keys(proxied_request).await {
+                Ok(response) => {
+                    let mut stream = response.into_inner();
+                    let (tx, grpc_rx) = mpsc::channel(req.buffer_size as usize);
+
+                    tokio::spawn(async move {
+                        while let Some(item) = stream.next().await {
+                            if tx.send(item).await.is_err() {
+                                break; // client disconnected
+                            }
+                        }
+                    });
+
+                    return Ok(Response::new(ReceiverStream::new(grpc_rx)));
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        address = %address,
+                        error = %e,
+                        "failed to fetch all keys from shard node"
+                    );
+                }
+            }
+        }
+
+        Err(Status::internal(
+            "failed to fetch all keys from any shard node",
+        ))
+    }
+
     async fn watch(
         &self,
         request: Request<WatchRequest>,

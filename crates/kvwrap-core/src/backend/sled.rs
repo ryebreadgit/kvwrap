@@ -6,6 +6,7 @@ use std::{
     fs,
     path::Path,
     sync::{Arc, RwLock},
+    thread,
 };
 
 #[derive(Clone)]
@@ -96,6 +97,41 @@ impl KvStore for SledStore {
             key: key_for_notify,
         });
         Ok(())
+    }
+
+    fn all_keys(
+        &self,
+        partition: &str,
+        prefix: Option<&[u8]>,
+        buffer: usize,
+    ) -> Receiver<Result<Vec<u8>>> {
+        let (tx, rx) = async_channel::bounded(buffer);
+
+        let tree = match self.get_or_create_tree(partition) {
+            Ok(t) => t,
+            Err(e) => {
+                let _ = tx.try_send(Err(e));
+                return rx;
+            }
+        };
+
+        let prefix = prefix.map(|p| p.to_vec());
+
+        thread::spawn(move || {
+            let iter = match prefix {
+                Some(ref p) => tree.scan_prefix(p),
+                None => tree.iter(),
+            };
+
+            for res in iter {
+                let item = res.map(|(k, _)| k.to_vec()).map_err(Error::Sled);
+                if tx.send_blocking(item).is_err() {
+                    break; // Receiver dropped
+                }
+            }
+        });
+
+        rx
     }
 
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent> {
