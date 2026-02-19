@@ -47,6 +47,7 @@ message AllKeysRequest {
 
 message AllKeysResponse {
   bytes key = 1;
+  bytes value = 2;
 }
 
 message WatchRequest {

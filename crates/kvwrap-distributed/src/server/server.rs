@@ -318,7 +318,7 @@ where
             .map_err(|e| Status::internal(format!("routing error: {}", e)))?;
 
         if self.owns_shard(&shard_id) {
-            let rx = self.store.all_keys(
+            let rx = self.store.scan(
                 &req.partition,
                 Some(req.prefix.as_slice()),
                 req.buffer_size as usize,
@@ -329,7 +329,7 @@ where
             tokio::spawn(async move {
                 while let Ok(result) = rx.recv().await {
                     let msg = match result {
-                        Ok(key) => AllKeysResponse { key },
+                        Ok((key, value)) => AllKeysResponse { key, value },
                         Err(e) => {
                             let _ = tx.send(Err(core_error_to_status(e))).await;
                             break;

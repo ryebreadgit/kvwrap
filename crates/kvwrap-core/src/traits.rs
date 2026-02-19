@@ -38,12 +38,12 @@ pub trait KvStore: Send + Sync {
     async fn get(&self, partition: &str, key: &[u8]) -> Result<Option<Vec<u8>>>;
     async fn set(&self, partition: &str, key: &[u8], value: &[u8]) -> Result<()>;
     async fn delete(&self, partition: &str, key: &[u8]) -> Result<()>;
-    fn all_keys(
+    fn scan(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>>;
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>>;
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent>;
     fn watch_prefix(&self, partition: &str, prefix: &[u8], buffer: usize) -> Receiver<WatchEvent>;
 
@@ -78,13 +78,13 @@ impl KvStore for Arc<dyn KvStore> {
         (**self).delete(partition, key).await
     }
 
-    fn all_keys(
+    fn scan(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>> {
-        (**self).all_keys(partition, prefix, buffer)
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>> {
+        (**self).scan(partition, prefix, buffer)
     }
 
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent> {

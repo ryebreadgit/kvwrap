@@ -3,7 +3,7 @@ use async_channel::Receiver;
 use async_compat::CompatExt;
 use async_trait::async_trait;
 use blocking::unblock;
-use futures_lite::future::{FutureExt, block_on};
+use futures_lite::future::block_on;
 use kvwrap_core::{Error, KvStore, Result, WatchEvent};
 use kvwrap_proto::{
     AllKeysRequest, AllKeysResponse, DeleteRequest, GetRequest, SetRequest, WatchRequest,
@@ -66,12 +66,12 @@ impl RemoteStore {
         .await
     }
 
-    fn start_all_keys_stream(
+    fn start_scan_stream(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>> {
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>> {
         let (tx, rx) = async_channel::bounded(buffer);
         let mut client = self.client.clone();
         let request = AllKeysRequest {
@@ -158,13 +158,13 @@ impl RemoteStore {
 
     async fn run_all_keys_stream(
         mut stream: tonic::Streaming<AllKeysResponse>,
-        tx: async_channel::Sender<Result<Vec<u8>>>,
+        tx: async_channel::Sender<Result<(Vec<u8>, Vec<u8>)>>,
     ) {
         async {
             loop {
                 match stream.message().await {
                     Ok(Some(msg)) => {
-                        if tx.send(Ok(msg.key)).await.is_err() {
+                        if tx.send(Ok((msg.key, msg.value))).await.is_err() {
                             break;
                         }
                     }
@@ -226,13 +226,13 @@ impl KvStore for RemoteStore {
         Ok(())
     }
 
-    fn all_keys(
+    fn scan(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>> {
-        self.start_all_keys_stream(partition, prefix, buffer)
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>> {
+        self.start_scan_stream(partition, prefix, buffer)
     }
 
     fn watch_key(&self, partition: &str, key: &[u8], buffer: usize) -> Receiver<WatchEvent> {

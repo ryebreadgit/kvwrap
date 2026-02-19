@@ -99,12 +99,12 @@ impl KvStore for SledStore {
         Ok(())
     }
 
-    fn all_keys(
+    fn scan(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>> {
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>> {
         let (tx, rx) = async_channel::bounded(buffer);
 
         let tree = match self.get_or_create_tree(partition) {
@@ -124,7 +124,9 @@ impl KvStore for SledStore {
             };
 
             for res in iter {
-                let item = res.map(|(k, _)| k.to_vec()).map_err(Error::Sled);
+                let item = res
+                    .map(|(k, v)| (k.to_vec(), v.to_vec()))
+                    .map_err(Error::Sled);
                 if tx.send_blocking(item).is_err() {
                     break; // Receiver dropped
                 }

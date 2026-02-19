@@ -102,12 +102,12 @@ impl KvStore for FjallStore {
         Ok(())
     }
 
-    fn all_keys(
+    fn scan(
         &self,
         partition: &str,
         prefix: Option<&[u8]>,
         buffer: usize,
-    ) -> Receiver<Result<Vec<u8>>> {
+    ) -> Receiver<Result<(Vec<u8>, Vec<u8>)>> {
         let (tx, rx) = async_channel::bounded(buffer);
 
         let keyspace = match self.get_or_create_keyspace(partition) {
@@ -127,14 +127,14 @@ impl KvStore for FjallStore {
             };
 
             for kv in iter {
-                let (key, _) = match kv.into_inner() {
-                    Ok(kv) => kv,
+                let (key, value) = match kv.into_inner() {
+                    Ok(kv) => (kv.0.to_vec(), kv.1.to_vec()),
                     Err(e) => {
                         let _ = tx.send_blocking(Err(Error::Fjall(e)));
                         break;
                     }
                 };
-                if tx.send_blocking(Ok(key.to_vec())).is_err() {
+                if tx.send_blocking(Ok((key, value))).is_err() {
                     break; // Receiver dropped
                 }
             }
