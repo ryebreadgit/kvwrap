@@ -53,6 +53,15 @@ store.delete("partition1", b"prefix:key2").await?;
 
 [See here](./crates/kvwrap/examples/) for practical examples of using kvwrap.
 
+## Todo
+
+- [x] Implement client library for connecting to a remote distributed kvstore
+- [X] Implement sharding and clustering capabilities in the distributed backend
+- [ ] Implement replication and consensus (Raft) in the distributed backend
+- [ ] Add support for more kvstore backends (e.g. RocksDB, LMDB)
+- [ ] Add more features to the client library (e.g. connection pooling, retries, etc.)
+- [ ] Add more examples and documentation
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
