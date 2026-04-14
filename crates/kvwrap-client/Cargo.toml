@@ -1,11 +1,13 @@
 [package]
 name = "kvwrap-client"
+description = "Lightweight client for kvwrap clusters"
+readme = "README.md"
+
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Lightweight client for kvwrap clusters"
 
 [dependencies]
 kvwrap-core = { workspace = true }

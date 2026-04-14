@@ -1,11 +1,13 @@
 [package]
 name = "kvwrap-distributed"
+description = "Distributed capabilities for kvwrap"
+readme = "README.md"
+
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Distributed capabilities for kvwrap"
 
 [features]
 default = []

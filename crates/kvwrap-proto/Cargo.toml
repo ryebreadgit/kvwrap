@@ -1,11 +1,13 @@
 [package]
 name = "kvwrap-proto"
+description = "Protobuf definitions for kvwrap"
+readme = "README.md"
+
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Protobuf definitions for kvwrap"
 
 [dependencies]
 tonic = { workspace = true }

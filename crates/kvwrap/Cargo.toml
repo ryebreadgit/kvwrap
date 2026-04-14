@@ -1,11 +1,13 @@
 [package]
 name = "kvwrap"
+description = "Flexible kvstore wrapper with optional distributed capabilities"
+readme = "README.md"
+
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Flexible kvstore wrapper with optional distributed capabilities"
 
 [features]
 default = ["fjall"]

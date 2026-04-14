@@ -1,11 +1,13 @@
 [package]
 name = "kvwrap-core"
+description = "Core traits and utilities for kvwrap"
+readme = "README.md"
+
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core traits and utilities for kvwrap"
 
 [features]
 default = []

@@ -16,6 +16,7 @@ authors = ["RyeBread <info@rye.moe>"]
 license = "MIT"
 repository = "https://github.com/ryebreadgit/kvwrap"
 description = "A flexible key-value store wrapper with optional distributed capabilities"
+readme = "README.md"
 
 [workspace.dependencies]
 # Internal
