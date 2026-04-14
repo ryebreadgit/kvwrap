@@ -745,7 +745,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "kvwrap"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "kvwrap-client",
  "kvwrap-core",
@@ -756,7 +756,7 @@ dependencies = [
 
 [[package]]
 name = "kvwrap-bin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "kvwrap-client"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-channel",
  "async-compat",
@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "kvwrap-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -798,7 +798,7 @@ dependencies = [
 
 [[package]]
 name = "kvwrap-distributed"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "kvwrap-core",
  "kvwrap-proto",
@@ -812,7 +812,7 @@ dependencies = [
 
 [[package]]
 name = "kvwrap-proto"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "prost",
  "serde",
