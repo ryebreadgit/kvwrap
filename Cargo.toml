@@ -50,6 +50,7 @@ async-net = "2"
 async-compat = "0.2"
 futures-lite = "2"
 blocking = "1.6"
+pollster = "0.4.0" # For examples
 
 [profile.release]
 opt-level = "z"

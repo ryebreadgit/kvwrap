@@ -16,3 +16,7 @@ full = ["distributed", "client"]
 kvwrap-core = { workspace = true }
 kvwrap-distributed = { workspace = true, optional = true }
 kvwrap-client = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+pollster.workspace = true # Async runtime for examples
