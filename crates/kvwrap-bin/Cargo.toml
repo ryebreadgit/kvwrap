@@ -2,6 +2,9 @@
 name = "kvwrap-bin"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "kvwrap binary runner"
 
 [[bin]]
@@ -9,7 +12,7 @@ name = "kvwrap"
 path = "src/main.rs"
 
 [dependencies]
-kvwrap = { path = "../kvwrap", features = ["distributed", "sled"] }
+kvwrap = { workspace = true, features = ["distributed", "sled"] }
 clap = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

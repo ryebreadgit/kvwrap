@@ -2,11 +2,14 @@
 name = "kvwrap-client"
 version.workspace = true
 edition.workspace = true
+repository.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "Lightweight client for kvwrap clusters"
 
 [dependencies]
-kvwrap-core = { path = "../kvwrap-core" }
-kvwrap-proto = { path = "../kvwrap-proto" }
+kvwrap-core = { workspace = true }
+kvwrap-proto = { workspace = true }
 async-trait = { workspace = true }
 async-compat = { workspace = true }
 tonic = { workspace = true }

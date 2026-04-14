@@ -2,6 +2,9 @@
 name = "kvwrap-distributed"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "Distributed capabilities for kvwrap"
 
 [features]
@@ -10,8 +13,8 @@ fjall = ["kvwrap-core/fjall"]
 sled = ["kvwrap-core/sled"]
 
 [dependencies]
-kvwrap-core = { path = "../kvwrap-core", default-features = false }
-kvwrap-proto = { path = "../kvwrap-proto" }
+kvwrap-core = { workspace = true, default-features = false }
+kvwrap-proto = { workspace = true }
 tonic = { workspace = true }
 prost = { workspace = true }
 tokio = { workspace = true }

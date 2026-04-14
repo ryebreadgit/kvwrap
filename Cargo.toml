@@ -18,9 +18,11 @@ repository = "https://github.com/ryebreadgit/kvwrap"
 
 [workspace.dependencies]
 # Internal
-kvwrap-core = { path = "crates/kvwrap-core" }
-kvwrap-distributed = { path = "crates/kvwrap-distributed" }
-kvwrap-client = { path = "crates/kvwrap-client" }
+kvwrap = { path = "crates/kvwrap", version = "0.1.0" }
+kvwrap-client = { path = "crates/kvwrap-client", version = "0.1.0" }
+kvwrap-core = { path = "crates/kvwrap-core", version = "0.1.0", default-features = false }
+kvwrap-distributed = { path = "crates/kvwrap-distributed", version = "0.1.0" }
+kvwrap-proto = { path = "crates/kvwrap-proto", version = "0.1.0" }
 
 # External
 fjall = "3"

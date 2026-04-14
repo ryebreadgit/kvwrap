@@ -2,6 +2,9 @@
 name = "kvwrap-proto"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "Protobuf definitiaons for kvwrap"
 
 [dependencies]
