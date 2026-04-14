@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Protobuf definitiaons for kvwrap"
+description = "Protobuf definitions for kvwrap"
 
 [dependencies]
 tonic = { workspace = true }
