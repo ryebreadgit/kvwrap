@@ -15,6 +15,7 @@ edition = "2024"
 authors = ["RyeBread <info@rye.moe>"]
 license = "MIT"
 repository = "https://github.com/ryebreadgit/kvwrap"
+description = "A flexible key-value store wrapper with optional distributed capabilities"
 
 [workspace.dependencies]
 # Internal
