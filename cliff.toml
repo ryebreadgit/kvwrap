@@ -1,0 +1,40 @@
+[changelog]
+header = "# Changelog\n\n"
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first | trim }}\
+{% endfor %}
+{% endfor %}\n
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+commit_parsers = [
+  # Try to auto-categorize by keywords in the message
+  { message = "(?i)^add|(?i)\\badd\\b|(?i)^implement|(?i)^initial", group = "Added" },
+  { message = "(?i)^fix|(?i)\\bfix\\b|(?i)^repair|(?i)^correct", group = "Fixed" },
+  { message = "(?i)^update|(?i)^bump|(?i)^upgrade|(?i)^change", group = "Changed" },
+  { message = "(?i)^remove|(?i)^delete|(?i)^drop|(?i)\\bremove\\b", group = "Removed" },
+  { message = "(?i)^refactor|(?i)^reformat|(?i)^rename|(?i)^break out|(?i)^switch|(?i)^move", group = "Changed" },
+  { message = "(?i)^doc|(?i)^readme|(?i)\\bdocs\\b", group = "Documentation" },
+  { message = "(?i)^chore|(?i)^ci|(?i)^build|(?i)^cargo", group = "Chores" },
+
+  { message = ".*", group = "⚠ Review" },
+]
+
+# Skip merge commits
+filter_commits = false
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+sort_commits = "newest"
