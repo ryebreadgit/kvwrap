@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["RyeBread <info@rye.moe>"]
 license = "MIT"
@@ -20,11 +20,11 @@ readme = "README.md"
 
 [workspace.dependencies]
 # Internal
-kvwrap = { path = "crates/kvwrap", version = "0.1.1" }
-kvwrap-client = { path = "crates/kvwrap-client", version = "0.1.1" }
-kvwrap-core = { path = "crates/kvwrap-core", version = "0.1.1", default-features = false }
-kvwrap-distributed = { path = "crates/kvwrap-distributed", version = "0.1.1" }
-kvwrap-proto = { path = "crates/kvwrap-proto", version = "0.1.1" }
+kvwrap = { path = "crates/kvwrap", version = "0.1.2" }
+kvwrap-client = { path = "crates/kvwrap-client", version = "0.1.2" }
+kvwrap-core = { path = "crates/kvwrap-core", version = "0.1.2", default-features = false }
+kvwrap-distributed = { path = "crates/kvwrap-distributed", version = "0.1.2" }
+kvwrap-proto = { path = "crates/kvwrap-proto", version = "0.1.2" }
 
 # External
 fjall = "3"
